@@ -71,12 +71,10 @@ X_train, X_test, y_train, y_test = train_test_split(
 # ==================================================
 @st.cache_resource
 def train_models():
-    # ---- Naive Bayes ----
     nb = GaussianNB()
     nb.fit(X_train, y_train)
     proba_nb = nb.predict_proba(X_test)[:, 1]
 
-    # ---- ANN ----
     ann = Sequential([
         Input(shape=(X_train.shape[1],)),
         Dense(64, activation="relu"),
@@ -98,57 +96,38 @@ def train_models():
     )
     proba_ann = ann.predict(X_test).flatten()
 
-    # ---- Meta Learner ----
     X_meta = np.column_stack((proba_nb, proba_ann))
     meta = LogisticRegression(max_iter=1000)
     meta.fit(X_meta, y_test)
 
     f1 = f1_score(y_test, meta.predict(X_meta))
-
     return nb, ann, meta, f1
 
 nb_model, ann_model, meta_model, f1_model = train_models()
 
-st.success(f"✅ Model trained successfully | F1 Score: {f1_model:.4f}")
+st.success(f"✅ Model trained | F1 Score: {f1_model:.4f}")
 
 # ==================================================
-# Manual Input (Date & Notes)
+# INPUT DATA PREDIKSI (HANYA DATE & NOTES)
 # ==================================================
-st.subheader("📝 Catatan Harian")
+st.subheader("🧠 Input Data Prediksi")
 
-input_date = st.date_input("Tanggal")
+input_date = st.date_input("Tanggal Prediksi")
 input_notes = st.text_area(
-    "Catatan / Notes",
-    placeholder="Tuliskan catatan harian (tidak mempengaruhi prediksi)"
+    "Notes / Catatan",
+    placeholder="Isi catatan harian di sini..."
 )
 
 # ==================================================
-# User Input for Prediction
-# ==================================================
-st.subheader("🧠 Input Data untuk Prediksi")
-
-user_data = {}
-
-for col in X.columns:
-    if col in encoders:
-        pilihan = encoders[col].classes_
-        selected = st.selectbox(col, pilihan)
-        user_data[col] = encoders[col].transform([selected])[0]
-    else:
-        user_data[col] = st.number_input(
-            col,
-            value=float(df[col].mean())
-        )
-
-# ==================================================
-# Prediction
+# PREDICTION (AUTO DATA)
 # ==================================================
 if st.button("🔍 Predict Productivity"):
-    user_df = pd.DataFrame([user_data])
-    user_scaled = scaler.transform(user_df)
+    # gunakan nilai rata-rata data sebagai input model
+    auto_input = X.mean().to_frame().T
+    auto_scaled = scaler.transform(auto_input)
 
-    nb_prob = nb_model.predict_proba(user_scaled)[:, 1]
-    ann_prob = ann_model.predict(user_scaled).flatten()
+    nb_prob = nb_model.predict_proba(auto_scaled)[:, 1]
+    ann_prob = ann_model.predict(auto_scaled).flatten()
 
     meta_input = np.column_stack((nb_prob, ann_prob))
     result = meta_model.predict(meta_input)[0]
