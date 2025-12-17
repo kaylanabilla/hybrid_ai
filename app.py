@@ -97,16 +97,22 @@ nb_model, ann_model, meta_model, f1_model = train_models()
 st.success(f"✅ Model trained | F1 Score: {f1_model:.4f}")
 
 # ==================================================
-# FORM INPUT (DATE + NOTES DIGABUNG)
+# FORM INPUT (DATE & NOTES DIKETIK MANUAL)
 # ==================================================
 st.subheader("📝 Input Data Harian")
 
 with st.form("daily_form"):
     col1, col2 = st.columns(2)
     with col1:
-        input_date = st.date_input("Tanggal")
+        input_date = st.text_input(
+            "Tanggal",
+            placeholder="Contoh: 2025-01-10"
+        )
     with col2:
-        input_notes = st.text_area("Catatan / Notes")
+        input_notes = st.text_area(
+            "Catatan / Notes",
+            placeholder="Tulis catatan harian di sini"
+        )
 
     st.markdown("### 🧠 Data untuk Prediksi")
 
