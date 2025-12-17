@@ -31,7 +31,7 @@ def load_data():
 
     encoders = {}
     for col in df.select_dtypes(include="object").columns:
-        if col not in ["date", "notes"]:
+        if col != "notes":   # notes tidak ikut model
             le = LabelEncoder()
             df[col] = le.fit_transform(df[col])
             encoders[col] = le
@@ -44,7 +44,7 @@ df, encoders = load_data()
 # ==================================================
 # Feature Selection
 # ==================================================
-ignore_cols = ["date", "notes"]
+ignore_cols = ["notes"]   # notes saja yang diabaikan
 
 X = df.drop(
     columns=["Productivity_Score (1-10)", "Produktif"] + ignore_cols,
@@ -97,26 +97,24 @@ nb_model, ann_model, meta_model, f1_model = train_models()
 st.success(f"✅ Model trained | F1 Score: {f1_model:.4f}")
 
 # ==================================================
-# FORM INPUT (DATE & NOTES DIKETIK MANUAL)
+# FORM INPUT
 # ==================================================
-st.subheader("📝 Input Data Harian")
+st.subheader("📝 Catatan Harian (Tidak Masuk Model)")
 
-with st.form("daily_form"):
-    col1, col2 = st.columns(2)
-    with col1:
-        input_date = st.text_input(
-            "Tanggal",
-            placeholder="Contoh: 2025-01-10"
-        )
-    with col2:
-        input_notes = st.text_area(
-            "Catatan / Notes",
-            placeholder="Tulis catatan harian di sini"
-        )
+input_date_manual = st.text_input(
+    "Tanggal (Catatan)",
+    placeholder="Contoh: 10 Januari 2025"
+)
+input_notes = st.text_area(
+    "Catatan / Notes",
+    placeholder="Catatan harian bebas"
+)
 
-    st.markdown("### 🧠 Data untuk Prediksi")
+st.subheader("🧠 Data untuk Prediksi (Masuk Model)")
 
+with st.form("predict_form"):
     user_data = {}
+
     for col in X.columns:
         if col in encoders:
             pilihan = encoders[col].classes_
@@ -144,8 +142,8 @@ if submitted:
     result = meta_model.predict(meta_input)[0]
 
     st.markdown("## 📊 Hasil Prediksi")
-    st.write("📅 Tanggal:", input_date)
-    st.write("📝 Catatan:", input_notes)
+    st.write("📅 Tanggal Catatan:", input_date_manual)
+    st.write("📝 Notes:", input_notes)
 
     if result == 1:
         st.success("🎯 HASIL: **PRODUKTIF**")
