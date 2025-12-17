@@ -10,12 +10,12 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Input
 
 # =========================
-# PAGE CONFIG (AMAN)
+# PAGE CONFIG
 # =========================
 st.set_page_config(page_title="Hybrid AI Productivity Predictor", layout="centered")
 
 # =========================
-# CSS TAMBAHAN (TIDAK UBAH LOGIKA)
+# CSS (TAMPILAN SAJA)
 # =========================
 st.markdown("""
 <style>
@@ -44,14 +44,14 @@ st.markdown("""
     font-weight: bold;
 }
 .small-text {
-    opacity: 0.8;
+    opacity: 0.85;
     font-size: 14px;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================
-# JUDUL (TETAP SAMA, DIPERCANTIK)
+# HEADER
 # =========================
 st.markdown("""
 <div class="title-box">
@@ -61,7 +61,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ============================
-# Load Dataset (TIDAK DIUBAH)
+# LOAD DATASET (ASLI)
 # ============================
 @st.cache_data
 def load_data():
@@ -84,7 +84,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 # ============================
-# Train Models (TIDAK DIUBAH)
+# TRAIN MODEL (ASLI)
 # ============================
 @st.cache_resource
 def train_models():
@@ -115,20 +115,23 @@ nb_model, ann_model, meta_model, f1_score_model = train_models()
 st.info(f"📈 **F1 Score Model:** {f1_score_model:.4f}")
 
 # ============================
-# INPUT USER (ASLI, BISA NGETIK)
+# INPUT USER (KIRI – KANAN)
 # ============================
 st.subheader("🧠 Input Data")
 
+cols = st.columns(2)
 user_input = []
-for col in X.columns:
-    val = st.number_input(
-        label=col,
-        value=float(X[col].mean())
-    )
-    user_input.append(val)
+
+for i, col in enumerate(X.columns):
+    with cols[i % 2]:
+        val = st.number_input(
+            label=col,
+            value=float(X[col].mean())
+        )
+        user_input.append(val)
 
 # ============================
-# PREDIKSI (LOGIKA SAMA, OUTPUT DIPERBAGUS)
+# PREDIKSI
 # ============================
 if st.button("🔍 Predict"):
     user_array = np.array(user_input).reshape(1, -1)
@@ -157,4 +160,3 @@ if st.button("🔍 Predict"):
         <span class="small-text">Confidence: {confidence:.2f}%</span>
         </div>
         """, unsafe_allow_html=True)
-
