@@ -1,74 +1,50 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score
-
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Input
 
-# ==================================================
-# Page Config
-# ==================================================
-st.set_page_config(
-    page_title="Hybrid AI Productivity Predictor",
-    layout="centered"
-)
+st.set_page_config(page_title="Hybrid AI Productivity Predictor", layout="centered")
 
 st.title("📊 Hybrid AI Productivity Predictor")
 st.write("Model: **Naive Bayes + ANN (Stacking)**")
 
-# ==================================================
+# ============================
 # Load Dataset
-# ==================================================
+# ============================
 @st.cache_data
 def load_data():
     df = pd.read_csv("Morning_Routine_Productivity_Dataset.csv")
 
     encoders = {}
     for col in df.select_dtypes(include="object").columns:
-        if col not in ["date", "notes"]:
-            le = LabelEncoder()
-            df[col] = le.fit_transform(df[col])
-            encoders[col] = le
+        le = LabelEncoder()
+        df[col] = le.fit_transform(df[col])
+        encoders[col] = le
 
     df["Produktif"] = (df["Productivity_Score (1-10)"] >= 7).astype(int)
     return df, encoders
 
 df, encoders = load_data()
 
-# ==================================================
-# Feature Selection
-# ==================================================
-ignore_cols = ["date", "notes"]
-
-X = df.drop(
-    columns=["Productivity_Score (1-10)", "Produktif"] + ignore_cols,
-    errors="ignore"
-)
+X = df.drop(columns=["Productivity_Score (1-10)", "Produktif"])
 y = df["Produktif"]
 
-# ==================================================
-# Scaling
-# ==================================================
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X_scaled,
-    y,
-    test_size=0.2,
-    stratify=y,
-    random_state=42
+    X_scaled, y, test_size=0.2, stratify=y, random_state=42
 )
 
-# ==================================================
+# ============================
 # Train Models
-# ==================================================
+# ============================
 @st.cache_resource
 def train_models():
     nb = GaussianNB()
@@ -96,52 +72,38 @@ def train_models():
 nb_model, ann_model, meta_model, f1_model = train_models()
 st.success(f"✅ Model trained | F1 Score: {f1_model:.4f}")
 
-# ==================================================
-# FORM INPUT (DATE + NOTES DIGABUNG)
-# ==================================================
-st.subheader("📝 Input Data Harian")
+# ============================
+# User Input
+# ============================
+st.subheader("🧠 Input Data Pengguna")
 
-with st.form("daily_form"):
-    col1, col2 = st.columns(2)
-    with col1:
-        input_date = st.date_input("Tanggal")
-    with col2:
-        input_notes = st.text_area("Catatan / Notes")
+user_data = {}
 
-    st.markdown("### 🧠 Data untuk Prediksi")
+for col in X.columns:
+    if col in encoders:
+        options = encoders[col].classes_
+        choice = st.selectbox(col, options)
+        user_data[col] = encoders[col].transform([choice])[0]
+    else:
+        user_data[col] = st.number_input(
+            col,
+            value=float(df[col].mean())
+        )
 
-    user_data = {}
-    for col in X.columns:
-        if col in encoders:
-            pilihan = encoders[col].classes_
-            selected = st.selectbox(col, pilihan)
-            user_data[col] = encoders[col].transform([selected])[0]
-        else:
-            user_data[col] = st.number_input(
-                col,
-                value=float(df[col].mean())
-            )
-
-    submitted = st.form_submit_button("🔍 Predict Productivity")
-
-# ==================================================
+# ============================
 # Prediction
-# ==================================================
-if submitted:
+# ============================
+if st.button("🔍 Predict"):
     user_df = pd.DataFrame([user_data])
     user_scaled = scaler.transform(user_df)
 
-    nb_prob = nb_model.predict_proba(user_scaled)[:, 1]
-    ann_prob = ann_model.predict(user_scaled).flatten()
+    nb_p = nb_model.predict_proba(user_scaled)[:, 1]
+    ann_p = ann_model.predict(user_scaled).flatten()
 
-    meta_input = np.column_stack((nb_prob, ann_prob))
+    meta_input = np.column_stack((nb_p, ann_p))
     result = meta_model.predict(meta_input)[0]
 
-    st.markdown("## 📊 Hasil Prediksi")
-    st.write("📅 Tanggal:", input_date)
-    st.write("📝 Catatan:", input_notes)
-
     if result == 1:
-        st.success("🎯 HASIL: **PRODUKTIF**")
+        st.success("🎯 Prediction: **PRODUKTIF**")
     else:
-        st.error("⚠️ HASIL: **TIDAK PRODUKTIF**")
+        st.error("⚠️ Prediction: **TIDAK PRODUKTIF**")
