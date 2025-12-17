@@ -92,8 +92,23 @@ if st.button("🔍 Predict"):
 
     meta_input = np.column_stack((nb_p, ann_p))
     result = meta_model.predict(meta_input)[0]
+    confidence = meta_model.predict_proba(meta_input)[0][result] * 100
 
-    if result == 1:
-        st.success("🎯 Prediction: PRODUKTIF")
+    st.markdown("## 📊 Hasil Prediksi Produktivitas")
+
+    # =========================
+    # TINGKAT PRODUKTIVITAS
+    # =========================
+    if confidence >= 80:
+        st.success(f"🔥 **SANGAT PRODUKTIF** ({confidence:.2f}%)")
+        st.progress(100)
+    elif confidence >= 60:
+        st.success(f"✅ **PRODUKTIF** ({confidence:.2f}%)")
+        st.progress(int(confidence))
+    elif confidence >= 40:
+        st.warning(f"⚖️ **CUKUP PRODUKTIF** ({confidence:.2f}%)")
+        st.progress(int(confidence))
     else:
-        st.error("⚠️ Prediction: TIDAK PRODUKTIF")
+        st.error(f"❌ **TIDAK PRODUKTIF** ({confidence:.2f}%)")
+        st.progress(int(confidence))
+
